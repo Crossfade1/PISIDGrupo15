@@ -29,8 +29,6 @@ public class mqttToMongo {
                 .option("clientId", "mqtt_to_mongodb_example")
                 .option("brokerUrl", "tcp://localhost:1883")
                 .option("cleanSession", "true")
-                .option("username", "your_mqtt_username")
-                .option("password", "your_mqtt_password")
                 .load();
 
         // Define the schema for the MQTT data
