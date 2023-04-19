@@ -25,6 +25,29 @@
       <artifactId>junit</artifactId>
       <version>3.8.1</version>
     </dependency>
+    
+	<!-- https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver -->
+	<dependency>
+	    <groupId>org.mongodb</groupId>
+	    <artifactId>mongo-java-driver</artifactId>
+	    <version>3.12.12</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/org.apache.spark/spark-sql -->
+	<dependency>
+	    <groupId>org.apache.spark</groupId>
+	    <artifactId>spark-sql_2.13</artifactId>
+	    <version>3.4.0</version>
+	    <scope>provided</scope>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/org.eclipse.paho/mqtt-client -->
+	<dependency>
+        <groupId>org.eclipse.paho</groupId>
+        <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+	    <version>1.2.1</version>
+	</dependency>
+
   </dependencies>
 
   <build>
