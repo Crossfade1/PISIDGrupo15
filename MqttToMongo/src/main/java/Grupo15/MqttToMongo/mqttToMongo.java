@@ -78,6 +78,9 @@ public class mqttToMongo implements MqttCallback {
     public void messageArrived(String topic, MqttMessage c) throws Exception {
         try {	
         		System.out.println("Mensagem recebida: " + c.toString());
+        		
+        		//Tratar mensagem?
+        		
         		//System.out.println(c.toString());
                 //DBObject document_json;
                 //document_json = (DBObject) JSON.parse(c.toString());
