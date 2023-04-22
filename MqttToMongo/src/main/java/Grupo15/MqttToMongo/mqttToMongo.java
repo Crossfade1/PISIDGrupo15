@@ -82,9 +82,9 @@ public class mqttToMongo implements MqttCallback {
         		//Tratar mensagem?
         		
         		//System.out.println(c.toString());
-                //DBObject document_json;
-                //document_json = (DBObject) JSON.parse(c.toString());
-                //mongocol.insert(document_json);     	
+                DBObject document_json;
+                document_json = (DBObject) JSON.parse(c.toString());
+                mongocol.insert(document_json);     	
 				//documentLabel.append(c.toString()+"\n");				
         } catch (Exception e) {
             System.out.println(e);
