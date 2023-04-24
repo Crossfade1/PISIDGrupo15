@@ -20,20 +20,24 @@ import java.awt.*;
 import java.awt.event.*;
 
 
-public class mqttToMongo implements MqttCallback {
+public class mqttToMongo {
 	MqttClient mqttclient;
     static MongoClient mongoClient;
     static DB db;
-    static DBCollection mongocol;
+    //static DBCollection mongocol;
 	static String mongo_user = new String();
 	static String mongo_password = new String();
 	static String mongo_address = new String();
 	static String cloud_server = new String();
-    static String cloud_topic = new String();
+    static String cloud_Temptopic = new String();
+    static String cloud_Movetopic = new String();
     static String mongo_host = new String();
     static String mongo_replica = new String();
+    //Mongo DB and Collections
 	static String mongo_database = new String();
-    static String mongo_collection = new String();
+    static String mongo_Tempcollection = new String();
+    static String mongo_movecollection = new String();
+    static String mongo_backupcollection = new String();
 	static String mongo_authentication = new String();
 	//static JTextArea documentLabel = new JTextArea("\n");
     
@@ -41,63 +45,49 @@ public class mqttToMongo implements MqttCallback {
     	try {
             Properties p = new Properties();
             p.load(new FileInputStream("cloudToMongo.ini"));
-			mongo_address = p.getProperty("mongo_address");
+            //Mqtt Properties
+            cloud_server = p.getProperty("cloud_server");	
+            cloud_Temptopic = p.getProperty("cloud_Temptopic");
+            cloud_Movetopic = p.getProperty("cloud_Movetopic");
+            //Mongo
+            mongo_address = p.getProperty("mongo_address");
             mongo_user = p.getProperty("mongo_user");
             mongo_password = p.getProperty("mongo_password");						
             mongo_replica = p.getProperty("mongo_replica");
-            cloud_server = p.getProperty("cloud_server");	
-            //System.out.println(cloud_server);
-            cloud_topic = p.getProperty("cloud_topic");
             mongo_host = p.getProperty("mongo_host");
             mongo_database = p.getProperty("mongo_database");
             mongo_authentication = p.getProperty("mongo_authentication");			
-            mongo_collection = p.getProperty("mongo_collection");
+            mongo_Tempcollection = p.getProperty("mongo_Tempcollection");
+            mongo_movecollection = p.getProperty("mongo_movecollection");
+            mongo_backupcollection = p.getProperty("mongo_backupcollection");
         } catch (Exception e) {
             System.out.println("Error reading CloudToMongo.ini file " + e);
             JOptionPane.showMessageDialog(null, "The CloudToMongo.inifile wasn't found.", "CloudToMongo", JOptionPane.ERROR_MESSAGE);
         }
-    	connectCloud();
+    	connectMongo();
     }
 	
-    public void connectCloud() {
-    	System.out.println("Connecting....");
-		int i;
-        try {
-			i = new Random().nextInt(100000);
-            mqttclient = new MqttClient(cloud_server, "CloudToMongo_"+String.valueOf(i)+"_"+cloud_topic);
-            mqttclient.connect();
-            mqttclient.setCallback(this);
-            mqttclient.subscribe(cloud_topic);
-            System.out.println("Connectado com sucesso!");
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
+    
+    public void connectMongo() {
+		String mongoURI = new String();
+		mongoURI = "mongodb://";		
+		if (mongo_authentication.equals("true")) mongoURI = mongoURI + mongo_user + ":" + mongo_password + "@";		
+		mongoURI = mongoURI + mongo_address;		
+		if (!mongo_replica.equals("false")) 
+			if (mongo_authentication.equals("true")) mongoURI = mongoURI + "/?replicaSet=" + mongo_replica+"&authSource=admin";
+			else mongoURI = mongoURI + "/?replicaSet=" + mongo_replica;		
+		else
+			if (mongo_authentication.equals("true")) mongoURI = mongoURI  + "/?authSource=admin";			
+		MongoClient mongoClient = new MongoClient(new MongoClientURI(mongoURI));						
+		db = mongoClient.getDB(mongo_database);
+		startTempThread();
     }
     
-    @Override
-    public void messageArrived(String topic, MqttMessage c) throws Exception {
-        try {	
-        		System.out.println("Mensagem recebida: " + c.toString());
-        		
-        		//Tratar mensagem?
-        		
-        		//System.out.println(c.toString());
-                DBObject document_json;
-                document_json = (DBObject) JSON.parse(c.toString());
-                mongocol.insert(document_json);     	
-				//documentLabel.append(c.toString()+"\n");				
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-    }
-
-    @Override
-    public void connectionLost(Throwable cause) {
+    private void startTempThread() {
+		temperatureToMongo ttM = new temperatureToMongo(db, mongo_Tempcollection, cloud_server, cloud_Temptopic);
+		ttM.accessTempCollection();
     }
     
-    @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {
-    }	
 	
 
 	
