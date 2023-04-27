@@ -68,6 +68,7 @@ public class temperatureToMongo implements MqttCallback{
 	
 	@Override
     public void messageArrived(String topic, MqttMessage c) throws Exception{
+		//JSON.parse() dá erro quando aparece 3@, como evitar?
 		System.out.println(c.toString());
 		String message = c.toString().replace("@", "");
         try {	
