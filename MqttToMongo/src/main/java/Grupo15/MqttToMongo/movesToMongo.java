@@ -2,7 +2,6 @@ package Grupo15.MqttToMongo;
 
 import java.util.Random;
 
-import org.apache.hadoop.shaded.com.nimbusds.jose.shaded.json.JSONObject;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -12,15 +11,14 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-//import com.mongodb.MongoTimeoutException;
-//import com.mongodb.WriteResult;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 
+public class movesToMongo implements MqttCallback{
 
-public class temperatureToMongo implements MqttCallback{
-	
 	private DB db;
-	private String mongo_Tempcollection;
+	private String mongo_Movescollection;
     static DBCollection mongocol;
 
 	MqttClient mqttclient;
@@ -28,11 +26,10 @@ public class temperatureToMongo implements MqttCallback{
     private String cloud_topic = new String();
     
     private messageList backup;
-
 	
-	public temperatureToMongo(DB database, String mongo_Tempcollection,String cloud_server, String cloud_topic, messageList backup) {
+	public movesToMongo(DB database, String mongo_Movescollection,String cloud_server, String cloud_topic, messageList backup) {
 		this.db = database;
-		this.mongo_Tempcollection = mongo_Tempcollection;
+		this.mongo_Movescollection = mongo_Movescollection;
 		this.cloud_server = cloud_server;
 		this.cloud_topic = cloud_topic;
 		this.backup=backup;
@@ -45,8 +42,8 @@ public class temperatureToMongo implements MqttCallback{
 		//accessTempCollection();
 	//}
 	
-	public void accessTempCollection() {
-		mongocol = db.getCollection(mongo_Tempcollection);	
+	public void accessMoveCollection() {
+		mongocol = db.getCollection(mongo_Movescollection);	
 		System.out.println("Collection added");
 	    connectCloud();
 	}
@@ -60,7 +57,7 @@ public class temperatureToMongo implements MqttCallback{
             mqttclient.connect();
             mqttclient.setCallback(this);
             mqttclient.subscribe(cloud_topic);
-            System.out.println("Connectado com sucesso! - TemperaturesToMongo");
+            System.out.println("Connectado com sucesso! - MovesToMongo");
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -68,22 +65,22 @@ public class temperatureToMongo implements MqttCallback{
 	
 	@Override
     public void messageArrived(String topic, MqttMessage c) throws Exception{
-		System.out.println(c.toString());
-		String message = c.toString().replace("@", "");
-        try {	
-    		System.out.println("Mensagem recebida: " + message);
+       try {	
+    		System.out.println("Mensagem recebida: " + c.toString());
             DBObject document_json;
-            //System.out.println(c.toString().replace("@", "/"));
-            document_json = (DBObject) JSON.parse(message);
-            //System.out.println(document_json);
-            mongocol.insert(document_json);
-        } catch (Exception e) {
-        	System.out.println(e);
-            //System.err.println("Servidor down");
-        	//System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
-        	//forceSend(c.toString());
-        	this.messageArrived(topic, c);
-            //backup.put(new mensagemMQTT(this.cloud_topic, c.toString()));
+            document_json = (DBObject) JSON.parse(c.toString());
+            WriteResult result = mongocol.insert(document_json);
+            
+            if (result.wasAcknowledged()) {
+                System.out.println("Document inserted successfully");
+            } else {
+            	System.err.println("Servidor down");
+                backup.put(new mensagemMQTT(this.cloud_topic, c.toString()));
+            }   	
+        } catch (MongoTimeoutException e) {
+            System.out.println(e);
+           // System.err.println("Servidor down");
+           // backup.put(new mensagemMQTT(this.cloud_topic, c.toString()));
         }
     }
 
