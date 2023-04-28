@@ -69,7 +69,8 @@ public class temperatureToMongo implements MqttCallback{
 	private String handleMessage(String message) {
 		String[] msgArray=message.split(","); //Divide a informação do sensor recebida em campos para analise;
 		String result = "";
-		result += msgArray[0] + ","; //A data não é verificada
+		//result += msgArray[0] + ","; //A data não é verificada
+		result+=checkDate(msgArray[0]);
 		//Tratar da parte da leitura do sensor
 		String[] leituraLegenda = msgArray[1].split(":");
 		result += leituraLegenda[0]+":";
@@ -80,7 +81,8 @@ public class temperatureToMongo implements MqttCallback{
 			}
 		}
 		if (!isCorrect) {
-			result += '"' + leituraLegenda[1] + '"' + ",";		
+			result += '"' + leituraLegenda[1] + '"' + ",";
+			System.err.println("DADO ENVIADO ERRADO (LEITURA) => " + leituraLegenda[1]);
 		} else {
 			result += leituraLegenda[1] + ",";
 		}
@@ -89,16 +91,45 @@ public class temperatureToMongo implements MqttCallback{
 		result += sensorLegenda[0]+":";
 		boolean isCorrectSensor = true;
 		for (char c : sensorLegenda[1].replace(" ", "").toCharArray()) {
-			if(!Character.isDigit(c) && c!='.') {
+			if(!Character.isDigit(c) && c!='.' && c!='}') {
 				isCorrectSensor = false;
 			}
 		}
 		if (!isCorrectSensor) {
-			result += '"' + sensorLegenda[1] + '"' + ",";		
+			result += '"' + sensorLegenda[1] + '"' + ",";
+			System.err.println("DADO ENVIADO ERRADO (SENSOR) => " + sensorLegenda[1]);
 		} else {
 			result += sensorLegenda[1] + ",";
 		}
 		return result;
+	}
+	
+	private String checkDate(String dateMessage) { //Retornar string tratada
+		String legend = dateMessage.split(":", 2)[0]+":";
+		String date = dateMessage.split(":", 2)[1];
+		//System.out.println("LEGENDA => " + legend);
+		//System.out.println("date => " + date);
+		legend+= String.valueOf('"');
+		boolean removeFirstSpace = false;
+		for(char c : date.toCharArray()) {
+			//if (c != '"') {
+				//if(c == ' ' && !removeFirstSpace) {
+					//removeFirstSpace=true;
+				//} else {
+					//legend+=c;
+				//}
+			//}
+			if (Character.isDigit(c) || c=='-' || c==':' || c=='.' || (c==' ' && removeFirstSpace))
+				legend+=c;
+			
+			if(c==' ' && !removeFirstSpace)
+				removeFirstSpace=true;
+		}
+		//if(!legend.equals(dateMessage))
+			//System.err.println("DADO ENVIADO ERRADO (DATA) => " + dateMessage);
+		legend+= String.valueOf('"') + ", ";
+		//System.out.println("DATA COMPLETA => " + legend);
+		return legend;
 	}
 	
 	@Override
