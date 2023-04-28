@@ -69,9 +69,34 @@ public class temperatureToMongo implements MqttCallback{
 	private String handleMessage(String message) {
 		String[] msgArray=message.split(","); //Divide a informação do sensor recebida em campos para analise;
 		String result = "";
-		for(int i=0; i<msgArray.length; i++) {
-			String msg = msgArray[i];
-			System.out.println("MSG => " + msg);
+		result += msgArray[0] + ","; //A data não é verificada
+		//Tratar da parte da leitura do sensor
+		String[] leituraLegenda = msgArray[1].split(":");
+		result += leituraLegenda[0]+":";
+		boolean isCorrect = true;
+		for (char c : leituraLegenda[1].replace(" ", "").toCharArray()) {
+			if(!Character.isDigit(c) && c!='.') {
+				isCorrect = false;
+			}
+		}
+		if (!isCorrect) {
+			result += '"' + leituraLegenda[1] + '"' + ",";		
+		} else {
+			result += leituraLegenda[1] + ",";
+		}
+		//Tratar da parte da identificação do sensor
+		String[] sensorLegenda = msgArray[2].split(":");
+		result += sensorLegenda[0]+":";
+		boolean isCorrectSensor = true;
+		for (char c : sensorLegenda[1].replace(" ", "").toCharArray()) {
+			if(!Character.isDigit(c) && c!='.') {
+				isCorrectSensor = false;
+			}
+		}
+		if (!isCorrectSensor) {
+			result += '"' + sensorLegenda[1] + '"' + ",";		
+		} else {
+			result += sensorLegenda[1] + ",";
 		}
 		return result;
 	}
@@ -86,7 +111,7 @@ public class temperatureToMongo implements MqttCallback{
             //System.out.println(c.toString().replace("@", "/"));
             document_json = (DBObject) JSON.parse(message);
             //System.out.println(document_json);
-            mongocol.insert(document_json);
+            //mongocol.insert(document_json);
         } catch (Exception e) {
         	System.out.println(e);
             //System.err.println("Servidor down");
