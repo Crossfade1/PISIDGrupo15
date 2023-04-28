@@ -28,6 +28,8 @@ public class temperatureToMongo implements MqttCallback{
     private String cloud_topic = new String();
     
     private messageList backup;
+    
+    private int number =0;
 
 	
 	public temperatureToMongo(DB database, String mongo_Tempcollection,String cloud_server, String cloud_topic, messageList backup) {
@@ -139,14 +141,14 @@ public class temperatureToMongo implements MqttCallback{
         try {	
     		System.out.println("Mensagem recebida: " + message);
             DBObject document_json;
-            //System.out.println(c.toString().replace("@", "/"));
             document_json = (DBObject) JSON.parse(message);
-            //System.out.println(document_json);
-            //mongocol.insert(document_json);
+            mongocol.insert(document_json);
+            this.number++;
+            System.out.println(number);
         } catch (Exception e) {
-        	System.out.println(e);
+        	//System.out.println(e);
             //System.err.println("Servidor down");
-        	//System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
+        	System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
         	//forceSend(c.toString());
         	this.messageArrived(topic, c);
             //backup.put(new mensagemMQTT(this.cloud_topic, c.toString()));
@@ -155,7 +157,7 @@ public class temperatureToMongo implements MqttCallback{
 
 	@Override
 	public void connectionLost(Throwable cause) {
-		// TODO Auto-generated method stub
+		System.err.println("CONEXÃO PERDIDA COM O MQTT BROKER");
 		
 	}
 
