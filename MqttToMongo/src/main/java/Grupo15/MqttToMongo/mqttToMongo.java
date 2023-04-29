@@ -12,7 +12,7 @@ import com.mongodb.*;
 import com.mongodb.util.JSON;
 
 import java.util.*;
-import java.util.Vector;
+import java.util.List;
 import java.io.File;
 import java.io.*;
 import javax.swing.*;
@@ -40,7 +40,7 @@ public class mqttToMongo {
     static String mongo_backupcollection = new String();
 	static String mongo_authentication = new String();
 	//static JTextArea documentLabel = new JTextArea("\n");
-    
+	
     private void getproperties() {
     	try {
             Properties p = new Properties();
@@ -81,11 +81,17 @@ public class mqttToMongo {
 		MongoClient mongoClient = new MongoClient(new MongoClientURI(mongoURI));						
 		db = mongoClient.getDB(mongo_database);
 		startTempThread();
+		startMovesThread();
     }
     
     private void startTempThread() {
 		temperatureToMongo ttM = new temperatureToMongo(db, mongo_Tempcollection, cloud_server, cloud_Temptopic);
 		ttM.accessTempCollection();
+    }
+    
+    private void startMovesThread() {
+		movesToMongo mT = new movesToMongo(db, mongo_movecollection, cloud_server, cloud_Movetopic);
+		mT.accessMoveCollection();
     }
     
 	

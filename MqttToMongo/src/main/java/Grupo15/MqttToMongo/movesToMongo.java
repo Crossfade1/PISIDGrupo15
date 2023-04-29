@@ -2,7 +2,6 @@ package Grupo15.MqttToMongo;
 
 import java.util.Random;
 
-import org.apache.hadoop.shaded.com.nimbusds.jose.shaded.json.JSONObject;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -12,15 +11,14 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-//import com.mongodb.MongoTimeoutException;
-//import com.mongodb.WriteResult;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.WriteResult;
 import com.mongodb.util.JSON;
 
+public class movesToMongo implements MqttCallback{
 
-public class temperatureToMongo implements MqttCallback{
-	
 	private DB db;
-	private String mongo_Tempcollection;
+	private String mongo_Movescollection;
     static DBCollection mongocol;
 
 	MqttClient mqttclient;
@@ -28,24 +26,17 @@ public class temperatureToMongo implements MqttCallback{
     private String cloud_topic = new String();
     
     private int number =0;
-
 	
-	public temperatureToMongo(DB database, String mongo_Tempcollection,String cloud_server, String cloud_topic) {
+	public movesToMongo(DB database, String mongo_Movescollection,String cloud_server, String cloud_topic) {
 		this.db = database;
-		this.mongo_Tempcollection = mongo_Tempcollection;
+		this.mongo_Movescollection = mongo_Movescollection;
 		this.cloud_server = cloud_server;
 		this.cloud_topic = cloud_topic;
 	}
 	
-
 	
-	//@Override
-	//public void run() {
-		//accessTempCollection();
-	//}
-	
-	public void accessTempCollection() {
-		mongocol = db.getCollection(mongo_Tempcollection);	
+	public void accessMoveCollection() {
+		mongocol = db.getCollection(mongo_Movescollection);	
 		System.out.println("Collection added");
 	    connectCloud();
 	}
@@ -59,48 +50,29 @@ public class temperatureToMongo implements MqttCallback{
             mqttclient.connect();
             mqttclient.setCallback(this);
             mqttclient.subscribe(cloud_topic);
-            System.out.println("Connectado com sucesso! - TemperaturesToMongo");
+            System.out.println("Connectado com sucesso! - MovesToMongo");
         } catch (MqttException e) {
             e.printStackTrace();
         }
 	}
 	
+	
 	private String handleMessage(String message) {
-		String[] msgArray=message.split(","); //Divide a informação do sensor recebida em campos para analise;
+		String[] msgArray = cleanMessage(message).split(","); //Divide a informação do sensor recebida em campos para analise;
 		String result = "";
-		//result += msgArray[0] + ","; //A data não é verificada
 		result+=checkDate(msgArray[0]);
-		
-		//Tratar da parte da leitura do sensor
-		String[] leituraLegenda = msgArray[1].split(":");
-		result += leituraLegenda[0]+":";
-		boolean isCorrect = true;
-		for (char c : leituraLegenda[1].replace(" ", "").toCharArray()) {
-			if(!Character.isDigit(c) && c!='.') {
-				isCorrect = false;
-			}
-		}
-		if (!isCorrect) {
-			result += '"' + leituraLegenda[1] + '"' + ",";
-			System.err.println("DADO ENVIADO ERRADO (LEITURA) => " + leituraLegenda[1]);
+		result+=checkFrom(msgArray[1]) + ",";
+		result+=checkFrom(msgArray[2]);
+		return result;
+	}
+	
+	private String cleanMessage(String message) {
+		String result = "";
+		if(message.startsWith("movimentação ratos:")) {
+			result = message.split(" ", 3)[2];
+			System.err.println("ERRO (FORMATO MENSAGEM) => " + result);
 		} else {
-			result += leituraLegenda[1] + ",";
-		}
-		
-		//Tratar da parte da identificação do sensor
-		String[] sensorLegenda = msgArray[2].split(":");
-		result += sensorLegenda[0]+":";
-		boolean isCorrectSensor = true;
-		for (char c : sensorLegenda[1].replace(" ", "").toCharArray()) {
-			if(!Character.isDigit(c) && c!='.' && c!='}') {
-				isCorrectSensor = false;
-			}
-		}
-		if (!isCorrectSensor) {
-			result += '"' + sensorLegenda[1] + '"' + ",";
-			System.err.println("DADO ENVIADO ERRADO (SENSOR) => " + sensorLegenda[1]);
-		} else {
-			result += sensorLegenda[1] + ",";
+			result = message;
 		}
 		return result;
 	}
@@ -109,7 +81,7 @@ public class temperatureToMongo implements MqttCallback{
 		String legend = dateMessage.split(":", 2)[0]+":";
 		String date = dateMessage.split(":", 2)[1];
 		legend+= String.valueOf('"');
-		boolean removeFirstSpace = false;
+		boolean removeFirstSpace = true;
 		for(char c : date.toCharArray()) {
 			if (Character.isDigit(c) || c=='-' || c==':' || c=='.' || (c==' ' && removeFirstSpace))
 				legend+=c;
@@ -121,25 +93,55 @@ public class temperatureToMongo implements MqttCallback{
 		return legend;
 	}
 	
+	private String checkFrom(String field) {
+		String result = "";
+		//Tratar da parte da identificação do sensor
+		String[] sensorLegenda = field.split(":");
+		if(sensorLegenda[0].replace(" ", "").equals("from")) {
+			result += " SalaEntrada:";
+			System.err.println("ERRO (ORIGEM) => " + sensorLegenda[0]);
+		}
+		else if(sensorLegenda[0].replace(" ", "").equals("to")) {
+			result += " SalaSaida:";
+			System.err.println("ERRO (DESTINO) => " + sensorLegenda[0]);
+		} else {
+			result += sensorLegenda[0]+":";
+		}
+		boolean isCorrectSensor = true;
+		for (char c : sensorLegenda[1].replace(" ", "").toCharArray()) {
+			if(!Character.isDigit(c) && c!='.' && c!='}') {
+				isCorrectSensor = false;
+			}
+		}
+		if (!isCorrectSensor) {
+			result += '"' + sensorLegenda[1] + '"';
+			System.err.println("DADO ENVIADO ERRADO (" + sensorLegenda[0] + ") => " + sensorLegenda[1]);
+		} else {
+			result += sensorLegenda[1];
+		}
+		return result;
+	}
+	
 	@Override
     public void messageArrived(String topic, MqttMessage c) throws Exception{
+		//System.out.println("MENSAGEM POR TRATAR => " + c.toString());
 		String message = handleMessage(c.toString());
-        try {	
+       try {	
     		System.out.println("Mensagem recebida: " + message);
             DBObject document_json;
             document_json = (DBObject) JSON.parse(message);
             mongocol.insert(document_json);
             this.number++;
             System.out.println(number);
-        } catch (Exception e) {
-        	System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
-        	this.messageArrived(topic, c);
-        }
+       } catch (Exception e) {
+			System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
+			this.messageArrived(topic, c);
+       }
     }
 
 	@Override
 	public void connectionLost(Throwable cause) {
-		System.err.println("CONEXÃO PERDIDA COM O MQTT BROKER");
+		// TODO Auto-generated method stub
 		
 	}
 
