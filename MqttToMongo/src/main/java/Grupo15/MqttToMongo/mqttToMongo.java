@@ -41,8 +41,6 @@ public class mqttToMongo {
 	static String mongo_authentication = new String();
 	//static JTextArea documentLabel = new JTextArea("\n");
 	
-    messageList backup = new messageList();
-	
     private void getproperties() {
     	try {
             Properties p = new Properties();
@@ -83,16 +81,16 @@ public class mqttToMongo {
 		MongoClient mongoClient = new MongoClient(new MongoClientURI(mongoURI));						
 		db = mongoClient.getDB(mongo_database);
 		startTempThread();
-		//startMovesThread();
+		startMovesThread();
     }
     
     private void startTempThread() {
-		temperatureToMongo ttM = new temperatureToMongo(db, mongo_Tempcollection, cloud_server, cloud_Temptopic, this.backup);
+		temperatureToMongo ttM = new temperatureToMongo(db, mongo_Tempcollection, cloud_server, cloud_Temptopic);
 		ttM.accessTempCollection();
     }
     
     private void startMovesThread() {
-		movesToMongo mT = new movesToMongo(db, mongo_movecollection, cloud_server, cloud_Movetopic, this.backup);
+		movesToMongo mT = new movesToMongo(db, mongo_movecollection, cloud_server, cloud_Movetopic);
 		mT.accessMoveCollection();
     }
     

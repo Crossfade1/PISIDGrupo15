@@ -27,17 +27,14 @@ public class temperatureToMongo implements MqttCallback{
 	private String cloud_server = new String();
     private String cloud_topic = new String();
     
-    private messageList backup;
-    
     private int number =0;
 
 	
-	public temperatureToMongo(DB database, String mongo_Tempcollection,String cloud_server, String cloud_topic, messageList backup) {
+	public temperatureToMongo(DB database, String mongo_Tempcollection,String cloud_server, String cloud_topic) {
 		this.db = database;
 		this.mongo_Tempcollection = mongo_Tempcollection;
 		this.cloud_server = cloud_server;
 		this.cloud_topic = cloud_topic;
-		this.backup=backup;
 	}
 	
 
@@ -73,6 +70,7 @@ public class temperatureToMongo implements MqttCallback{
 		String result = "";
 		//result += msgArray[0] + ","; //A data não é verificada
 		result+=checkDate(msgArray[0]);
+		
 		//Tratar da parte da leitura do sensor
 		String[] leituraLegenda = msgArray[1].split(":");
 		result += leituraLegenda[0]+":";
@@ -88,6 +86,7 @@ public class temperatureToMongo implements MqttCallback{
 		} else {
 			result += leituraLegenda[1] + ",";
 		}
+		
 		//Tratar da parte da identificação do sensor
 		String[] sensorLegenda = msgArray[2].split(":");
 		result += sensorLegenda[0]+":";
@@ -109,34 +108,21 @@ public class temperatureToMongo implements MqttCallback{
 	private String checkDate(String dateMessage) { //Retornar string tratada
 		String legend = dateMessage.split(":", 2)[0]+":";
 		String date = dateMessage.split(":", 2)[1];
-		//System.out.println("LEGENDA => " + legend);
-		//System.out.println("date => " + date);
 		legend+= String.valueOf('"');
 		boolean removeFirstSpace = false;
 		for(char c : date.toCharArray()) {
-			//if (c != '"') {
-				//if(c == ' ' && !removeFirstSpace) {
-					//removeFirstSpace=true;
-				//} else {
-					//legend+=c;
-				//}
-			//}
 			if (Character.isDigit(c) || c=='-' || c==':' || c=='.' || (c==' ' && removeFirstSpace))
 				legend+=c;
 			
 			if(c==' ' && !removeFirstSpace)
 				removeFirstSpace=true;
 		}
-		//if(!legend.equals(dateMessage))
-			//System.err.println("DADO ENVIADO ERRADO (DATA) => " + dateMessage);
 		legend+= String.valueOf('"') + ", ";
-		//System.out.println("DATA COMPLETA => " + legend);
 		return legend;
 	}
 	
 	@Override
     public void messageArrived(String topic, MqttMessage c) throws Exception{
-		//JSON.parse() dá erro quando aparece 3@, como evitar?
 		String message = handleMessage(c.toString());
         try {	
     		System.out.println("Mensagem recebida: " + message);
@@ -146,12 +132,8 @@ public class temperatureToMongo implements MqttCallback{
             this.number++;
             System.out.println(number);
         } catch (Exception e) {
-        	//System.out.println(e);
-            //System.err.println("Servidor down");
         	System.err.println("Não foi possível escrever a seguinte mensagem no mongo: \n" + message);
-        	//forceSend(c.toString());
         	this.messageArrived(topic, c);
-            //backup.put(new mensagemMQTT(this.cloud_topic, c.toString()));
         }
     }
 
