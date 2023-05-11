@@ -22,8 +22,8 @@ public class MongoDBReader {
 	private final Timer timer;
 	private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-	public MongoDBReader(String dbName, String collectionName) {
-		this.collection = MongoClients.create("mongodb://localhost:27017").getDatabase(dbName)
+	public MongoDBReader(String ip, String dbName, String collectionName) {
+		this.collection = MongoClients.create("mongodb://"+ip).getDatabase(dbName)
 				.getCollection(collectionName);
 		this.BackupCollection = MongoClients.create("mongodb://localhost:27017").getDatabase("Backup")
 				.getCollection(collectionName);
@@ -82,9 +82,9 @@ public class MongoDBReader {
 	}
 
 	public static void main(String[] args) {
-		MongoDBReader reader = new MongoDBReader("pisid", "movimentacaoRatos");
+		MongoDBReader reader = new MongoDBReader("localhost:27017","pisid", "movimentacaoRatos");
 		reader.startReadingAndWriting(false);
-		MongoDBReader readerTemp = new MongoDBReader("pisid", "temperatura");
+		MongoDBReader readerTemp = new MongoDBReader("localhost:27017", "pisid", "temperatura");
 		readerTemp.startReadingAndWriting(true);
 	}
 }
